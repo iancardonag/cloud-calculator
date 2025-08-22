@@ -1,174 +1,153 @@
-# ☁️ Cloud Calculator (Flask + AWS)
+# ☁️ Cloud Calculator
 
-![GitHub repo size](https://img.shields.io/github/repo-size/iancardonag/cloud-calculator?style=flat-square)
-![GitHub contributors](https://img.shields.io/github/contributors/iancardonag/cloud-calculator?style=flat-square)
-![GitHub last commit](https://img.shields.io/github/last-commit/iancardonag/cloud-calculator?style=flat-square)
-![GitHub license](https://img.shields.io/badge/license-MIT-green?style=flat-square)
+![GitHub repo size](https://img.shields.io/github/repo-size/iancardonag/cloud-calculator?style=flat-square)  
+![GitHub contributors](https://img.shields.io/github/contributors/iancardonag/cloud-calculator?style=flat-square)  
+![GitHub last commit](https://img.shields.io/github/last-commit/iancardonag/cloud-calculator?style=flat-square)  
+![GitHub license](https://img.shields.io/github/license/iancardonag/cloud-calculator?style=flat-square)  
 
 Aplicación web en **Python (Flask)** que funciona como una **calculadora en la nube**, con dos funcionalidades integradas:
 
 1. 🔢 **Calculadora básica**: suma, resta, multiplicación y división.  
-2. 🌡️ **Conversión de temperaturas**: Celsius ↔ Fahrenheit.
+2. 🌡️ **Conversión de temperaturas**: Celsius ↔ Fahrenheit.  
 
-Pensada para desplegar en **AWS Elastic Beanstalk** (capa gratuita), manteniendo un estilo visual limpio tipo “mini-dashboard”.
+Desplegada en la nube usando **AWS EC2 con Nginx + Gunicorn**.
+
+---
+
+## 🌐 URL de la aplicación desplegada
+👉 `http://<IP_PUBLICA_EC2>/`
+
+*(Reemplazar con la IP pública de tu instancia EC2)*
+
+---
+
+## ⚡ Tecnologías utilizadas
+
+* **Python 3.12**
+* **Flask 3.0**
+* **Gunicorn** (servidor de producción WSGI)
+* **Nginx** (servidor web / reverse proxy)
+* **HTML5 + CSS3**
+* **AWS EC2**
+* **Git / GitHub**
 
 ---
 
 ## 📝 Descripción de la aplicación
 
-La app ofrece una interfaz web moderna con dos tarjetas:
-- **Operaciones matemáticas básicas** entre dos números.
-- **Conversor de temperatura** entre °C y °F.
+La aplicación ofrece una interfaz sencilla y moderna donde el usuario puede:
 
-Los resultados se muestran en la misma página, sin recargas complejas.
-
----
-
-## ⚙️ Tecnologías utilizadas
-
-- **Python 3.12**
-- **Flask 3.0**
-- **Gunicorn** (servidor WSGI para producción en AWS)
-- **HTML5 + CSS3**
-- **AWS Elastic Beanstalk**
-- **Git / GitHub**
+- Realizar operaciones matemáticas básicas desde el navegador.  
+- Convertir temperaturas entre escalas Celsius y Fahrenheit.  
+- Ver resultados en tiempo real dentro de un panel web con estilo profesional.  
 
 ---
 
-## 🌐 URL de la aplicación desplegada
+## 📋 Requisitos previos
 
-> Reemplaza esto con tu URL real cuando despliegues:  
-> **https://TU-ENTORNO.eba-xxxxxxx.region.elasticbeanstalk.com**
-
----
-
-## 🔑 Instrucciones básicas de acceso
-
-- **Local**: `http://127.0.0.1:5000`  
-- **Misma red local** (opcional): `http://<IP_LAN_DE_TU_PC>:5000`  
-- **Producción (AWS EB)**: URL pública generada por Elastic Beanstalk (arriba).
+- Cuenta en **AWS** con acceso a **EC2**.  
+- **Instancia Ubuntu 22.04** creada en EC2.  
+- **Puertos abiertos en Security Groups**:  
+  - **22 (SSH)** → acceso remoto.  
+  - **80 (HTTP)** → acceso web.  
+- **Clave .pem descargada** para conexión SSH.  
+- **Git** y **Python 3.9+** instalados en la instancia.  
 
 ---
 
-## ✅ Requisitos previos detallados
+## 🛠 Paso a paso del despliegue en EC2
 
-1. **Cuenta AWS** con permisos para Elastic Beanstalk, EC2 e IAM.  
-2. **AWS CLI** y **EB CLI** instaladas y configuradas:
-   ```bash
-   aws configure
-   # Ingresa Access Key, Secret, región (ej. us-east-1) y formato (json)
+### 1️⃣ Conectarse a la instancia
+```bash
+---
+ssh -i tu_clave.pem ubuntu@<IP_PUBLICA_EC2>
 
-pip install awsebcli
-## ✅ Requirements:
+### 2️⃣ Instalar dependencias del sistema
+sudo apt update && sudo apt upgrade -y
+sudo apt install python3-pip python3-venv nginx git -y
 
-Flask==3.0.0
-gunicorn==21.2.0
-
-
-## ✅ Clonar y preparar el entorno:
+### 3️⃣ Clonar el proyecto
 git clone https://github.com/iancardonag/cloud-calculator.git
 cd cloud-calculator
 
-python -m venv venv
-# Windows:
-venv\Scripts\activate
-# Linux/Mac:
+###4️⃣ Crear entorno virtual e instalar dependencias
+python3 -m venv venv
 source venv/bin/activate
-
 pip install -r requirements.txt
+pip install gunicorn
+
+###5️⃣ Probar aplicación localmente
 python app.py
-# Abre http://127.0.0.1:5000 y verifica que funcione.
+Verificar que funciona en http://127.0.0.1:5000 (dentro de la instancia).
 
-## Inicializar Elastic Beanstalk
-eb init -p python-3.9 cloud-calculator
-# Selecciona tu región (ej. us-east-1).
-# Si pide crear roles, acepta (crea "aws-elasticbeanstalk-ec2-role" y service role).
+⚙️ Configuración de Gunicorn + Nginx
 
-## Crear entorno Single instance:
-eb create cloud-calculator-env \
-  --single \
-  --instance_types t3.micro \
-  --scale 1
-# Espera a que el estado esté 'Green'.
+### 6️⃣ Ejecutar Gunicorn
+gunicorn app:app --bind 127.0.0.1:5000
 
-## Actualizar la app despues de cambios:
+### 7️⃣ Configurar Nginx
+Crear archivo de configuración:
+sudo nano /etc/nginx/sites-available/flaskapp
 
-git add .
-git commit -m "Mejoras UI y fixes"
-eb deploy
+Contenido:
+server {
+    listen 80;
+    server_name _;
 
-Configuraciones de AWS
-Security Groups (entorno single instance)
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
 
-Inbound (entradas) del SG de la EC2:
+Enlazar y eliminar el default:
+sudo ln -s /etc/nginx/sites-available/flaskapp /etc/nginx/sites-enabled
+sudo rm /etc/nginx/sites-enabled/default
+sudo nginx -t
+sudo systemctl restart nginx
 
-HTTP 80: 0.0.0.0/0 (público)
+### 🔄 Automatizar con systemd
+sudo nano /etc/systemd/system/flaskapp.service
 
-HTTPS 443 (opcional si configuras SSL): 0.0.0.0/0
+Contenido:
+[Unit]
+Description=Gunicorn instance to serve Flask app
+After=network.target
 
-SSH 22 (solo si necesitas entrar por SSH): tu IP (ej. x.x.x.x/32)
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/cloud-calculator
+Environment="PATH=/home/ubuntu/cloud-calculator/venv/bin"
+ExecStart=/home/ubuntu/cloud-calculator/venv/bin/gunicorn --workers 3 --bind 127.0.0.1:5000 app:app
 
-Outbound (salidas): permitir All traffic (por defecto).
+[Install]
+WantedBy=multi-user.target
 
-Tipo de instancia
+### Activar servicio:
+sudo systemctl daemon-reload
+sudo systemctl enable flaskapp
+sudo systemctl start flaskapp
 
-t3.micro (recomendado) o t2.micro (capa gratuita).
+### verificar:
+sudo systemctl status flaskapp
 
-Variables de entorno (opcional)
 
-En eb setenv o consola de EB:
+🛑 Apagar para no generar costos
+Detener la instancia (recomendado):
+Desde AWS Console → EC2 → Detener instancia.
+Esto no borra nada, solo detiene cobros de cómputo.
 
-FLASK_ENV=production
+Terminar la instancia (destruirla):
+Desde AWS Console → EC2 → Terminar instancia.
+Esto borra todo permanentemente.
 
-PYTHONUNBUFFERED=1
-
-Escalado
-
-Para pruebas académicas: 1 instancia (sin autoescalado).
-
-| Problema                                | Causa típica                                                 | Solución                                                                                                 |
-| --------------------------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
-| **502 Bad Gateway**                     | La app no expone en el puerto esperado o Gunicorn no levantó | Asegura `Procfile` con `gunicorn app:app --bind 0.0.0.0:5000`. Revisa `eb logs`.                         |
-| **ModuleNotFoundError: flask**          | No se instalaron dependencias en EB                          | Verifica `requirements.txt` y redeploy: `eb deploy`.                                                     |
-| **La app funciona local pero no en EB** | Diferencias de entorno/puerto                                | No uses `app.run()` en producción. Deja que **Gunicorn** arranque tu app con el `Procfile`.              |
-| **No carga estáticos o CSS**            | Cache o paths relativos                                      | Forzar refresh (Ctrl+F5). Revisa rutas o usa `url_for('static', filename='...')` si migras a plantillas. |
-| **Timeout en despliegue**               | Red lenta/instalación pesada                                 | Reintenta `eb deploy` y revisa `eb logs` para el paquete que tarda.                                      |
-
-Consejos y mejores prácticas aprendidas
-
-Usa Procfile + Gunicorn para entornos productivos en EB.
-
-Mantén un requirements.txt minimalista y bloqueado (versiones exactas).
-
-No hardcodees el puerto en producción con app.run(); deja que lo maneje Gunicorn.
-
-Agrega badges y capturas al README: sube tu nivel de presentación.
-
-Limita SSH 22 a tu IP; HTTP 80 público.
-
-Cuando actualices el código: git commit → eb deploy.
-
-Documenta errores y soluciones en tu README (¡puntos extra en evaluación!).
-
-##Comandos utilizados:
-# Local
-git clone https://github.com/iancardonag/cloud-calculator.git
-cd cloud-calculator
-python -m venv venv
-# Win: venv\Scripts\activate   |  Linux/Mac: source venv/bin/activate
-pip install -r requirements.txt
-python app.py
-
-# AWS Elastic Beanstalk
-pip install awsebcli
-eb init -p python-3.9 cloud-calculator
-eb create cloud-calculator-env --single --instance_types t3.micro --scale 1
-eb open
-eb status
-eb health
-eb logs
-
-# Actualizaciones
-git add .
-git commit -m "Cambios"
-eb deploy
+| Problema                                       | Solución                                                                                         |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Página de Nginx por defecto en lugar de la app | Eliminar `/etc/nginx/sites-enabled/default`                                                      |
+| App no visible desde navegador                 | Revisar que Security Group tenga puerto 80 abierto a `0.0.0.0/0`                                 |
+| Error "No module named flask"                  | Instalar dependencias en el entorno: `pip install -r requirements.txt`                           |
+| App no arranca tras reinicio                   | Verificar con `sudo systemctl status flaskapp` y reiniciar con `sudo systemctl restart flaskapp` |
